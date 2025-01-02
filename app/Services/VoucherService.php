@@ -23,15 +23,26 @@ class VoucherService
      */
     public function storeVouchersFromXmlContents(array $xmlContents, User $user): array
     {
-        $vouchers = [];
+        $successfulVouchers = [];
+        $failedVouchers = [];
+
         foreach ($xmlContents as $xmlContent) {
-            $vouchers[] = $this->storeVoucherFromXmlContent($xmlContent, $user);
+            try {
+                $voucher = $this->storeVoucherFromXmlContent($xmlContent, $user);
+                $successfulVouchers[] = $voucher;
+            } catch (\Exception $e) {
+                $failedVouchers[] = [
+                    'xml_content' => $xmlContent,
+                    'error_message' => $e->getMessage(),
+                ];
+            }
         }
 
-        VouchersCreated::dispatch($vouchers, $user);
+        VouchersCreated::dispatch($successfulVouchers, $failedVouchers, $user);
 
-        return $vouchers;
+        return $successfulVouchers;
     }
+
 
     public function storeVoucherFromXmlContent(string $xmlContent, User $user): Voucher
     {

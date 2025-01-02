@@ -37,6 +37,7 @@ class VoucherService
     {
         $xml = new SimpleXMLElement($xmlContent);
 
+        // Extract existing fields
         $issuerName = (string) $xml->xpath('//cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name')[0];
         $issuerDocumentType = (string) $xml->xpath('//cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID/@schemeID')[0];
         $issuerDocumentNumber = (string) $xml->xpath('//cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID')[0];
@@ -47,6 +48,17 @@ class VoucherService
 
         $totalAmount = (string) $xml->xpath('//cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount')[0];
 
+        // Extract the series and number
+        $fullInvoiceId = (string) $xml->xpath('//cbc:ID')[0];
+        $series = substr($fullInvoiceId, 0, 4);
+        $number = substr($fullInvoiceId, 5); // Surpass character "-"
+
+        // Extract the document type
+        $documentType = (string) $xml->xpath('//cbc:InvoiceTypeCode')[0];
+
+        // Extract the currency
+        $currency = (string) $xml->xpath('//cbc:DocumentCurrencyCode')[0];
+
         $voucher = new Voucher([
             'issuer_name' => $issuerName,
             'issuer_document_type' => $issuerDocumentType,
@@ -56,6 +68,10 @@ class VoucherService
             'receiver_document_number' => $receiverDocumentNumber,
             'total_amount' => $totalAmount,
             'xml_content' => $xmlContent,
+            'series' => $series,
+            'number' => $number,
+            'document_type' => $documentType,
+            'currency' => $currency,
             'user_id' => $user->id,
         ]);
         $voucher->save();
@@ -76,5 +92,37 @@ class VoucherService
         }
 
         return $voucher;
+    }
+
+    public function regularizeVouchers(): void
+    {
+        $vouchers = Voucher::whereNull('series')
+            ->orWhereNull('number')
+            ->orWhereNull('document_type')
+            ->orWhereNull('currency')
+            ->get();
+
+        foreach ($vouchers as $voucher) {
+            $this->regularizeVoucher($voucher);
+        }
+    }
+    public function regularizeVoucher($voucher): void
+    {
+        $xmlContent = $voucher->xml_content;
+        $xml = new SimpleXMLElement($xmlContent);
+
+        $fullInvoiceId = (string) $xml->xpath('//cbc:ID')[0];
+        $series = substr($fullInvoiceId, 0, 4);
+        $number = substr($fullInvoiceId, 5); // Surpass character "-"
+
+        $documentType = (string) $xml->xpath('//cbc:InvoiceTypeCode')[0];
+        $currency = (string) $xml->xpath('//cbc:DocumentCurrencyCode')[0];
+
+        $voucher->update([
+            'series' => $series,
+            'number' => $number,
+            'document_type' => $documentType,
+            'currency' => $currency,
+        ]);
     }
 }

@@ -16,9 +16,14 @@ class GetVouchersHandler
 
     public function __invoke(GetVouchersRequest $request): AnonymousResourceCollection
     {
+        $user = auth()->user();
+        $filters = $request->only(['serie', 'number', 'type', 'currency', 'start_date', 'end_date']);
+
         $vouchers = $this->voucherService->getVouchers(
             $request->query('page'),
             $request->query('paginate'),
+            $filters,
+            $user
         );
 
         return VoucherResource::collection($vouchers);

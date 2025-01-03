@@ -12,10 +12,32 @@ use Illuminate\Support\Facades\DB;
 
 class VoucherService
 {
-    public function getVouchers(int $page, int $paginate): LengthAwarePaginator
+    public function getVouchers(int $page, int $paginate, array $filters, $user): LengthAwarePaginator
     {
-        return Voucher::with(['lines', 'user'])->paginate(perPage: $paginate, page: $page);
+        $query = Voucher::with(['lines', 'user'])
+                        ->where('user_id', $user->id);
+
+        if (isset($filters['start_date']) && isset($filters['end_date'])) {
+            $query->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+        }
+
+        $filterMappings = [
+            'serie' => 'serie',
+            'number' => 'number',
+            'type' => 'type',
+            'currency' => 'currency',
+        ];
+
+        foreach ($filterMappings as $filterKey => $dbField) {
+            if (isset($filters[$filterKey])) {
+                $query->where($dbField, $filters[$filterKey]);
+            }
+        }
+
+        return $query->paginate($paginate, ['*'], 'page', $page);
     }
+
+
 
     /**
      * @param string[] $xmlContents

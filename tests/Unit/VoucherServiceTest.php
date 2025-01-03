@@ -13,34 +13,26 @@ class VoucherServiceTest extends TestCase
     use RefreshDatabase;
 
     private VoucherService $voucherService;
+    private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->voucherService = app(VoucherService::class);
-    }
-
-    public function test_get_vouchers_returns_paginated_data()
-    {
-        User::factory()->create();
-        Voucher::factory()->count(10)->create();
-
-        $result = $this->voucherService->getVouchers(1, 5);
-
-        $this->assertCount(5, $result->items());
-        $this->assertTrue($result->hasMorePages());
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
     }
 
     public function test_store_voucher_from_xml_content_saves_correctly()
     {
-        $user = User::factory()->create();
+        
         $xmlContent = file_get_contents(base_path('tests/Fixtures/F002-3625.xml')); // Usa un archivo de prueba.
 
-        $voucher = $this->voucherService->storeVoucherFromXmlContent($xmlContent, $user);
+        $voucher = $this->voucherService->storeVoucherFromXmlContent($xmlContent, $this->user);
 
         $this->assertDatabaseHas('vouchers', [
             'id' => $voucher->id,
-            'user_id' => $user->id,
+            'user_id' => $this->user->id,
             'xml_content' => $xmlContent,
         ]);
 

@@ -52,8 +52,8 @@ Almacena comprobantes de formato XML. También realiza un envío de correo en se
     POST /api/v1/vouchers
 ```
     Body:
-        Key: File .xml
-        Key: File[] .xml .xml .xml
+        Key: files .xml
+        Key: files[] .xml .xml .xml
 
     Ejemplo de Uso:
 

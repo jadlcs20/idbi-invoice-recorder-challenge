@@ -147,4 +147,21 @@ class VoucherService
             ->get();
     }
 
+    public function deleteVoucher($voucherId, $user): array
+    {
+        $voucher = Voucher::where('id', $voucherId)->where('user_id', $user->id)->first();
+
+        if (!$voucher) {
+            return [
+                'message' => "Voucher not found or unauthorized",
+                'status' => 404
+            ];
+        }
+        $voucher->delete();
+
+        return [
+            'message' => "Voucher deleted successfully",
+            'status' => 200
+        ];
+    }
 }
